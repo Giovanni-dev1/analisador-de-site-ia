@@ -1,142 +1,294 @@
 import type { AnalysisResultData, AnalysisReason } from "@/components/analysis-result"
 
 // ==========================================
-// ASSINATURAS DIRETAS DE IA (EVIDÊNCIA FORTE)
+// CATEGORIA 1: ASSINATURAS DIRETAS DE IA (EVIDÊNCIA FORTE)
 // ==========================================
 const DIRECT_AI_SIGNATURES = [
   // v0.dev / Vercel
-  { patterns: [/created\s*(with|by)\s*v0/gi, /built\s*(with|by)\s*v0/gi, /v0\.dev/gi, /vercel\s*v0/gi], indicator: "Assinatura v0.dev", description: "Referência direta à ferramenta v0 da Vercel.", score: 45 },
+  { patterns: [/created\s*(with|by)\s*v0/gi, /built\s*(with|by)\s*v0/gi, /v0\.dev/gi, /vercel\s*v0/gi], indicator: "Assinatura v0.dev", description: "Referência direta à ferramenta v0 da Vercel", score: 50 },
   
   // Menções explícitas de IA
-  { patterns: [/generated\s*(by|with|using)\s*(ai|artificial\s*intelligence|gpt|claude|chatgpt|copilot)/gi, /ai[\-\s]generated/gi, /powered\s*by\s*(gpt|claude|openai|anthropic|gemini)/gi, /made\s*with\s*ai/gi], indicator: "Declaração Explícita de IA", description: "Código declara abertamente ter sido criado por IA.", score: 50 },
+  { patterns: [/generated\s*(by|with|using)\s*(ai|artificial\s*intelligence|gpt|claude|chatgpt|copilot)/gi, /ai[\-\s]generated/gi, /powered\s*by\s*(gpt|claude|openai|anthropic|gemini)/gi, /made\s*with\s*ai/gi], indicator: "Declaração Explícita de IA", description: "Código declara abertamente ter sido criado por IA", score: 55 },
   
   // Ferramentas de IA conhecidas
-  { patterns: [/cursor\.sh/gi, /cursor\s*ai/gi, /cursor\s*editor/gi], indicator: "Cursor AI", description: "Referência ao editor Cursor com IA integrada.", score: 40 },
-  { patterns: [/bolt\.new/gi, /stackblitz\s*bolt/gi], indicator: "Bolt.new", description: "Referência à ferramenta Bolt.new da StackBlitz.", score: 40 },
-  { patterns: [/replit\s*ai/gi, /replit\s*ghost/gi], indicator: "Replit AI", description: "Referência ao Replit com assistente de IA.", score: 40 },
-  { patterns: [/lovable\.dev/gi, /made\s*with\s*lovable/gi], indicator: "Lovable.dev", description: "Referência à ferramenta Lovable.dev.", score: 45 },
-  { patterns: [/windsurf/gi, /codeium\s*windsurf/gi], indicator: "Windsurf/Codeium", description: "Referência ao Windsurf ou Codeium.", score: 40 },
+  { patterns: [/cursor\.sh/gi, /cursor\s*ai/gi, /cursor\s*editor/gi], indicator: "Cursor AI", description: "Referência ao editor Cursor com IA integrada", score: 45 },
+  { patterns: [/bolt\.new/gi, /stackblitz\s*bolt/gi], indicator: "Bolt.new", description: "Referência à ferramenta Bolt.new da StackBlitz", score: 45 },
+  { patterns: [/replit\s*ai/gi, /replit\s*ghost/gi], indicator: "Replit AI", description: "Referência ao Replit com assistente de IA", score: 45 },
+  { patterns: [/lovable\.dev/gi, /made\s*with\s*lovable/gi], indicator: "Lovable.dev", description: "Referência à ferramenta Lovable.dev", score: 50 },
+  { patterns: [/windsurf/gi, /codeium\s*windsurf/gi], indicator: "Windsurf/Codeium", description: "Referência ao Windsurf ou Codeium", score: 45 },
+  { patterns: [/gptengineer/gi, /gpt\s*engineer/gi], indicator: "GPT Engineer", description: "Referência ao GPT Engineer", score: 45 },
+  { patterns: [/websim/gi, /websim\.ai/gi], indicator: "WebSim AI", description: "Referência ao WebSim AI", score: 45 },
   
-  // Comentários típicos de IA
-  { patterns: [/\/\/\s*This\s*(component|function|code)\s*(is|was)\s*(generated|created|built)/gi], indicator: "Comentário de Geração", description: "Comentário indicando código gerado automaticamente.", score: 35 },
-  { patterns: [/\{\/\*\s*AI[\-\s]generated/gi, /<!--\s*AI[\-\s]generated/gi], indicator: "Marcador de IA em Comentário", description: "Comentário HTML/JSX marcando código de IA.", score: 40 },
+  // Comentários típicos de IA em templates
+  { patterns: [/\/\/\s*This\s*(component|function|code)\s*(is|was)\s*(generated|created|built)/gi], indicator: "Comentário de Geração Automática", description: "Comentário indicando código gerado automaticamente", score: 40 },
+  { patterns: [/\{\/\*\s*AI[\-\s]generated/gi, /<!--\s*AI[\-\s]generated/gi], indicator: "Marcador de IA em Comentário", description: "Comentário HTML/JSX marcando código de IA", score: 45 },
 ]
 
 // ==========================================
-// PADRÕES DE ESTRUTURA DE CÓDIGO IA
+// CATEGORIA 2: BAIXA ENTROPIA EM NOMES (INDICADOR FORTE)
+// Fonte: Pesquisa mostra que IA usa nomes estatisticamente prováveis
+// ==========================================
+const LOW_ENTROPY_VARIABLE_NAMES = [
+  "data", "item", "items", "result", "results", "response", "value", "values",
+  "handle", "process", "fetch", "get", "set", "update", "create", "delete",
+  "temp", "tmp", "arr", "obj", "str", "num", "val", "res", "req",
+  "element", "elements", "list", "array", "object", "index", "count",
+  "current", "previous", "next", "first", "last", "new", "old",
+  "input", "output", "params", "options", "config", "settings",
+  "user", "users", "post", "posts", "comment", "comments",
+  "loading", "error", "success", "message", "messages",
+]
+
+// ==========================================
+// CATEGORIA 3: PADRÃO "COMMENT ECHO" (IA explica O QUE, não PORQUÊ)
+// ==========================================
+const COMMENT_ECHO_PATTERNS = [
+  // Comentários que apenas repetem o que o código faz
+  /\/\/\s*(calculate|compute|get|set|update|create|delete|fetch|handle|process)\s+the\s+/gi,
+  /\/\/\s*(initialize|initialise)\s+(the\s+)?(variable|array|object|state)/gi,
+  /\/\/\s*(loop|iterate)\s+(through|over)\s+(the\s+)?(array|list|items|elements)/gi,
+  /\/\/\s*(check|verify)\s+if\s+/gi,
+  /\/\/\s*(return|returns)\s+the\s+(result|value|data)/gi,
+  /\/\/\s*(add|append|push)\s+(the\s+)?(item|element|value)/gi,
+  /\/\/\s*(filter|map|reduce)\s+the\s+(array|list)/gi,
+  /\/\/\s*(increment|decrement)\s+(the\s+)?(counter|index|value)/gi,
+]
+
+// ==========================================
+// CATEGORIA 4: FRASES TÍPICAS DE CHATGPT/CLAUDE
+// ==========================================
+const AI_VERBAL_TICS = [
+  { patterns: [/ensure\s+that/gi], indicator: "Frase 'Ensure that'", minMatches: 3 },
+  { patterns: [/note\s+that/gi], indicator: "Frase 'Note that'", minMatches: 3 },
+  { patterns: [/crucially/gi], indicator: "Palavra 'Crucially'", minMatches: 2 },
+  { patterns: [/here\s+is\s+a\s+(simple\s+)?example/gi], indicator: "Frase 'Here is an example'", minMatches: 1 },
+  { patterns: [/let('|')?s\s+(implement|create|build|add)/gi], indicator: "Frase 'Let's implement'", minMatches: 2 },
+  { patterns: [/in\s+this\s+(example|case|scenario)/gi], indicator: "Frase 'In this example'", minMatches: 2 },
+  { patterns: [/as\s+follows/gi], indicator: "Frase 'As follows'", minMatches: 2 },
+  { patterns: [/it('|')s\s+worth\s+noting/gi], indicator: "Frase 'It's worth noting'", minMatches: 1 },
+  { patterns: [/the\s+following\s+(code|example|implementation)/gi], indicator: "Frase 'The following code'", minMatches: 2 },
+]
+
+// ==========================================
+// CATEGORIA 5: OVER-COMMENTING (IA comenta cada linha)
+// ==========================================
+function detectOverCommenting(content: string): { detected: boolean; ratio: number } {
+  const lines = content.split('\n')
+  let codeLines = 0
+  let commentLines = 0
+  
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (trimmed.length === 0) continue
+    
+    if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*') || trimmed.startsWith('<!--')) {
+      commentLines++
+    } else if (!trimmed.startsWith('import') && !trimmed.startsWith('export') && trimmed.length > 5) {
+      codeLines++
+    }
+  }
+  
+  const ratio = codeLines > 0 ? commentLines / codeLines : 0
+  // IA frequentemente tem ratio > 0.4 (comentário a cada 2-3 linhas de código)
+  return { detected: ratio > 0.35, ratio }
+}
+
+// ==========================================
+// CATEGORIA 6: CONSISTÊNCIA ESTILÍSTICA INUMANA
+// ==========================================
+function detectInhumanConsistency(content: string): { score: number; indicators: string[] } {
+  const indicators: string[] = []
+  let score = 0
+  
+  // Verifica se TODOS os arrow functions usam o mesmo estilo
+  const arrowWithBraces = (content.match(/=>\s*\{/g) || []).length
+  const arrowWithoutBraces = (content.match(/=>\s*[^{]/g) || []).length
+  
+  if (arrowWithBraces > 5 && arrowWithoutBraces === 0) {
+    indicators.push("Todas as arrow functions usam chaves (consistência artificial)")
+    score += 5
+  }
+  if (arrowWithoutBraces > 5 && arrowWithBraces === 0) {
+    indicators.push("Nenhuma arrow function usa chaves (consistência artificial)")
+    score += 5
+  }
+  
+  // Verifica se TODOS os componentes seguem exatamente o mesmo padrão
+  const functionComponents = (content.match(/function\s+[A-Z][a-zA-Z]+\s*\(/g) || []).length
+  const arrowComponents = (content.match(/const\s+[A-Z][a-zA-Z]+\s*=\s*\(/g) || []).length
+  
+  if (functionComponents > 3 && arrowComponents === 0) {
+    indicators.push("Todos os componentes são function declarations (consistência rígida)")
+    score += 4
+  }
+  if (arrowComponents > 3 && functionComponents === 0) {
+    indicators.push("Todos os componentes são arrow functions (consistência rígida)")
+    score += 4
+  }
+  
+  // Verifica imports perfeitamente organizados (sinal de IA)
+  const importLines = content.match(/^import\s+.+$/gm) || []
+  if (importLines.length > 5) {
+    // Checa se estão em ordem alfabética
+    const sortedImports = [...importLines].sort()
+    if (JSON.stringify(importLines) === JSON.stringify(sortedImports)) {
+      indicators.push("Imports perfeitamente ordenados alfabeticamente")
+      score += 6
+    }
+  }
+  
+  // Verifica se todos os try-catch têm a mesma estrutura
+  const tryCatches = content.match(/try\s*\{[\s\S]*?\}\s*catch\s*\([^)]*\)\s*\{[\s\S]*?\}/g) || []
+  if (tryCatches.length > 3) {
+    const structures = tryCatches.map(tc => tc.length)
+    const avgLen = structures.reduce((a, b) => a + b, 0) / structures.length
+    const variance = structures.reduce((sum, len) => sum + Math.pow(len - avgLen, 2), 0) / structures.length
+    if (variance < 100) { // Muito pouca variação
+      indicators.push("Todos os try-catch têm estrutura quase idêntica")
+      score += 8
+    }
+  }
+  
+  return { score, indicators }
+}
+
+// ==========================================
+// CATEGORIA 7: HAPPY PATH BIAS (IA ignora edge cases)
+// ==========================================
+function detectHappyPathBias(content: string): { score: number; indicators: string[] } {
+  const indicators: string[] = []
+  let score = 0
+  
+  // Conta async/await vs tratamento de erros
+  const asyncAwait = (content.match(/async|await/g) || []).length
+  const errorHandling = (content.match(/try\s*\{|\.catch\s*\(|onError|error\s*:/gi) || []).length
+  
+  if (asyncAwait > 5 && errorHandling < asyncAwait * 0.3) {
+    indicators.push("Muitas operações async sem tratamento de erro adequado")
+    score += 6
+  }
+  
+  // Verifica catch genéricos
+  const genericCatch = (content.match(/catch\s*\([^)]*\)\s*\{\s*(console\.(log|error)|\/\/)/g) || []).length
+  if (genericCatch > 2) {
+    indicators.push(`${genericCatch} blocos catch genéricos (apenas console.log)`)
+    score += genericCatch * 2
+  }
+  
+  // Verifica falta de validação de inputs
+  const functionParams = (content.match(/function\s+\w+\s*\([^)]+\)|=>\s*\{/g) || []).length
+  const typeChecks = (content.match(/typeof|instanceof|Array\.isArray|!==?\s*(null|undefined)/g) || []).length
+  
+  if (functionParams > 5 && typeChecks < functionParams * 0.2) {
+    indicators.push("Pouca validação de parâmetros de função")
+    score += 4
+  }
+  
+  return { score, indicators }
+}
+
+// ==========================================
+// CATEGORIA 8: PADRÕES DE CÓDIGO ESTRUTURAL DE IA
 // ==========================================
 const AI_CODE_PATTERNS = [
   // shadcn/ui extensivo
   {
-    patterns: [
-      /@\/components\/ui\/(button|card|input|dialog|dropdown|sheet|tabs|accordion|alert|avatar|badge|calendar|checkbox|collapsible|command|context-menu|hover-card|menubar|navigation-menu|popover|progress|radio-group|scroll-area|select|separator|skeleton|slider|switch|table|textarea|toast|toggle|tooltip|form|label|sonner|drawer)/gi,
-    ],
+    patterns: [/@\/components\/ui\/(button|card|input|dialog|dropdown|sheet|tabs|accordion|alert|avatar|badge|calendar|checkbox|collapsible|command|context-menu|hover-card|menubar|navigation-menu|popover|progress|radio-group|scroll-area|select|separator|skeleton|slider|switch|table|textarea|toast|toggle|tooltip|form|label|sonner|drawer)/gi],
     indicator: "shadcn/ui Extensivo",
-    description: "Uso massivo de componentes shadcn/ui - stack padrão de ferramentas de IA.",
-    score: 15,
-    minMatches: 6,
+    description: "Uso massivo de componentes shadcn/ui - stack padrão de ferramentas de IA",
+    score: 12,
+    minMatches: 8,
   },
   
   // Função cn() do shadcn
   {
-    patterns: [/\bcn\s*\(/gi],
-    indicator: "Utilitário cn()",
-    description: "Função cn() para classes CSS - padrão do shadcn/ui.",
-    score: 8,
-    minMatches: 4,
-  },
-  
-  // clsx/class-variance-authority
-  {
-    patterns: [/class-variance-authority/gi, /\bcva\s*\(/gi],
-    indicator: "class-variance-authority",
-    description: "Biblioteca CVA para variantes de componentes - comum em templates de IA.",
+    patterns: [/\bcn\s*\(/g],
+    indicator: "Utilitário cn() Extensivo",
+    description: "Função cn() para classes CSS usada excessivamente",
     score: 6,
-    minMatches: 2,
+    minMatches: 6,
   },
   
   // Lucide icons extensivo
   {
-    patterns: [/from\s*["']lucide-react["']/gi, /import\s*\{[^}]+\}\s*from\s*["']lucide-react/gi],
-    indicator: "Lucide React Extensivo",
-    description: "Múltiplos ícones Lucide - biblioteca padrão de ferramentas de IA.",
-    score: 6,
-    minMatches: 3,
-  },
-  
-  // Radix UI
-  {
-    patterns: [/@radix-ui\/(react-)?/gi],
-    indicator: "Radix UI Primitives",
-    description: "Componentes Radix UI - base do shadcn/ui.",
+    patterns: [/from\s*["']lucide-react["']/g],
+    indicator: "Lucide React",
+    description: "Biblioteca Lucide React - padrão em ferramentas de IA",
     score: 4,
-    minMatches: 3,
-  },
-]
-
-// ==========================================
-// PADRÕES DE TAILWIND GENÉRICOS (IA adora usar)
-// ==========================================
-const AI_TAILWIND_PATTERNS = [
-  // Combos de centralização excessiva
-  {
-    patterns: [/flex\s+items-center\s+justify-center/gi, /flex\s+flex-col\s+items-center/gi],
-    indicator: "Centralização Repetitiva",
-    description: "Padrão flex items-center justify-center usado excessivamente.",
-    score: 4,
-    minMatches: 8,
-  },
-  
-  // Gradientes
-  {
-    patterns: [/bg-gradient-to-(r|l|t|b|br|bl|tr|tl)/gi],
-    indicator: "Gradientes Tailwind",
-    description: "Múltiplos gradientes - IA tende a usar decorações visuais genéricas.",
-    score: 3,
     minMatches: 4,
   },
   
-  // Animações hover genéricas
+  // Radix UI extensivo
   {
-    patterns: [/hover:scale-\d+/gi],
-    indicator: "Scale no Hover",
-    description: "Efeito hover:scale repetitivo.",
-    score: 2,
+    patterns: [/@radix-ui\//g],
+    indicator: "Radix UI Extensivo",
+    description: "Múltiplos componentes Radix UI",
+    score: 5,
     minMatches: 5,
   },
   
-  // Transições genéricas
+  // class-variance-authority
   {
-    patterns: [/transition-all\s+duration-\d+/gi],
-    indicator: "Transições Genéricas",
-    description: "transition-all duration usado em excesso.",
-    score: 2,
-    minMatches: 6,
-  },
-  
-  // Spacing patterns repetitivos
-  {
-    patterns: [/space-y-4/gi, /space-y-6/gi, /gap-4/gi, /gap-6/gi],
-    indicator: "Spacing Repetitivo",
-    description: "Mesmo valor de spacing usado repetidamente.",
-    score: 2,
-    minMatches: 10,
+    patterns: [/class-variance-authority|cva\s*\(/g],
+    indicator: "class-variance-authority",
+    description: "Biblioteca CVA para variantes de componentes",
+    score: 4,
+    minMatches: 2,
   },
 ]
 
 // ==========================================
-// PADRÕES DE TEXTO/COPY GENÉRICOS
+// CATEGORIA 9: PADRÕES DE TAILWIND GENÉRICOS
+// ==========================================
+const AI_TAILWIND_PATTERNS = [
+  {
+    patterns: [/flex\s+items-center\s+justify-center/g, /flex\s+flex-col\s+items-center/g],
+    indicator: "Centralização Repetitiva",
+    description: "Padrão flex items-center justify-center usado excessivamente",
+    score: 3,
+    minMatches: 10,
+  },
+  {
+    patterns: [/bg-gradient-to-(r|l|t|b|br|bl|tr|tl)/g],
+    indicator: "Gradientes Tailwind Excessivos",
+    description: "Múltiplos gradientes decorativos",
+    score: 2,
+    minMatches: 5,
+  },
+  {
+    patterns: [/hover:scale-\d+/g],
+    indicator: "Scale no Hover Repetitivo",
+    description: "Efeito hover:scale usado em excesso",
+    score: 2,
+    minMatches: 6,
+  },
+  {
+    patterns: [/transition-all\s+duration-\d+/g],
+    indicator: "Transições Genéricas",
+    description: "transition-all duration usado excessivamente",
+    score: 2,
+    minMatches: 8,
+  },
+  {
+    patterns: [/animate-pulse|animate-spin|animate-bounce/g],
+    indicator: "Animações Built-in Repetitivas",
+    description: "Animações Tailwind built-in usadas em excesso",
+    score: 2,
+    minMatches: 5,
+  },
+]
+
+// ==========================================
+// CATEGORIA 10: TEXTOS GENÉRICOS E PLACEHOLDERS
 // ==========================================
 const AI_COPY_PATTERNS = [
-  // Placeholders clássicos
   {
     patterns: [/lorem\s*ipsum/gi],
     indicator: "Lorem Ipsum",
-    description: "Texto placeholder não substituído.",
-    score: 8,
+    description: "Texto placeholder não substituído",
+    score: 10,
+    minMatches: 1,
   },
-  
-  // Textos genéricos de landing page
   {
     patterns: [
       /welcome\s*to\s*(our|the)\s*(website|platform|app)/gi,
@@ -144,14 +296,14 @@ const AI_COPY_PATTERNS = [
       /join\s*(us|our)\s*(community|newsletter)/gi,
       /trusted\s*by\s*(thousands|millions)/gi,
       /start\s*your\s*free\s*trial/gi,
+      /we('|')?re\s+here\s+to\s+help/gi,
+      /take\s+your\s+.+\s+to\s+the\s+next\s+level/gi,
     ],
-    indicator: "Copy Genérico de Landing",
-    description: "Textos de marketing muito genéricos típicos de templates.",
-    score: 4,
-    minMatches: 3,
+    indicator: "Copy Genérico de Landing Page",
+    description: "Textos de marketing muito genéricos típicos de templates de IA",
+    score: 5,
+    minMatches: 4,
   },
-  
-  // Nomes de exemplo
   {
     patterns: [
       /john\s*(doe|smith)/gi,
@@ -159,265 +311,287 @@ const AI_COPY_PATTERNS = [
       /acme\s*(corp|inc|company)/gi,
       /example\.(com|org|net)/gi,
       /your[\-\s]*(name|email|company)[\-\s]*here/gi,
+      /user@example/gi,
+      /test@test/gi,
     ],
-    indicator: "Dados de Exemplo",
-    description: "Nomes e emails de exemplo não substituídos.",
-    score: 6,
+    indicator: "Dados de Exemplo Não Substituídos",
+    description: "Nomes e emails de exemplo típicos de IA",
+    score: 8,
     minMatches: 2,
   },
 ]
 
 // ==========================================
-// PADRÕES DE COMENTÁRIOS DE IA
+// CATEGORIA 11: COMENTÁRIOS DE SEÇÃO LITERAIS
 // ==========================================
 const AI_COMMENT_PATTERNS = [
-  // Comentários de seção muito óbvios
   {
     patterns: [
-      /<!--\s*(Hero|Header|Footer|Navbar|Navigation|Features?|Pricing|Testimonials?|CTA|FAQ|About)\s*Section\s*-->/gi,
-      /\{\/\*\s*(Hero|Header|Footer|Navbar|Navigation|Features?|Pricing|Testimonials?|CTA|FAQ|About)\s*Section\s*\*\/\}/gi,
-      /\/\/\s*(Hero|Header|Footer|Navbar|Features?|Pricing|Testimonials?|CTA|FAQ|About)\s*Section/gi,
+      /<!--\s*(Hero|Header|Footer|Navbar|Navigation|Features?|Pricing|Testimonials?|CTA|FAQ|About|Contact|Services?)\s*(Section)?\s*-->/gi,
+      /\{\/\*\s*(Hero|Header|Footer|Navbar|Navigation|Features?|Pricing|Testimonials?|CTA|FAQ|About|Contact|Services?)\s*(Section)?\s*\*\/\}/gi,
+      /\/\/\s*(Hero|Header|Footer|Navbar|Features?|Pricing|Testimonials?|CTA|FAQ|About|Contact|Services?)\s*(Section)?$/gim,
     ],
-    indicator: "Comentários de Seção Óbvios",
-    description: "Comentários descrevendo seções de forma muito literal - padrão de IA.",
-    score: 6,
-    minMatches: 3,
+    indicator: "Comentários de Seção Literais",
+    description: "Comentários que apenas nomeiam seções sem agregar valor",
+    score: 5,
+    minMatches: 4,
   },
-  
-  // TODO genéricos
   {
     patterns: [
-      /\/\/\s*TODO:\s*(add|implement|fix|update|change)/gi,
-      /\{\/\*\s*TODO:\s*(add|implement|fix|update|change)/gi,
+      /\/\/\s*TODO:\s*(add|implement|fix|update|change|remove)\s/gi,
+      /\{\/\*\s*TODO:\s*(add|implement|fix|update|change|remove)\s/gi,
     ],
-    indicator: "TODOs Genéricos",
-    description: "Comentários TODO muito genéricos deixados por IA.",
+    indicator: "TODOs Genéricos de IA",
+    description: "Comentários TODO muito genéricos deixados por IA",
     score: 4,
-    minMatches: 3,
+    minMatches: 4,
   },
 ]
 
 // ==========================================
-// PADRÕES DE URL/HOSPEDAGEM
+// CATEGORIA 12: PADRÕES DE URL/HOSPEDAGEM
 // ==========================================
 const AI_URL_PATTERNS = [
-  { pattern: /\.v0\.dev$/i, indicator: "Domínio v0.dev", description: "Site hospedado diretamente no v0.dev.", score: 55 },
-  { pattern: /v0-[a-z0-9]+\.vercel\.app$/i, indicator: "Deploy v0 na Vercel", description: "Padrão de URL de deploy do v0.", score: 40 },
-  { pattern: /bolt-[a-z0-9]+\.(netlify\.app|vercel\.app)/i, indicator: "Deploy Bolt.new", description: "Padrão de URL de deploy do Bolt.new.", score: 40 },
-  { pattern: /lovable-[a-z0-9]+\./i, indicator: "Deploy Lovable", description: "Padrão de URL de deploy do Lovable.dev.", score: 40 },
+  { pattern: /\.v0\.dev$/i, indicator: "Domínio v0.dev", description: "Site hospedado diretamente no v0.dev", score: 60 },
+  { pattern: /v0-[a-z0-9]+\.vercel\.app$/i, indicator: "Deploy v0 na Vercel", description: "Padrão de URL de deploy do v0", score: 45 },
+  { pattern: /bolt-[a-z0-9]+\.(netlify\.app|vercel\.app)/i, indicator: "Deploy Bolt.new", description: "Padrão de URL de deploy do Bolt.new", score: 45 },
+  { pattern: /lovable-[a-z0-9]+\./i, indicator: "Deploy Lovable", description: "Padrão de URL de deploy do Lovable.dev", score: 45 },
+  { pattern: /replit\.app/i, indicator: "Replit Deploy", description: "Site hospedado no Replit", score: 15 },
 ]
 
 // ==========================================
-// INDICADORES QUE REDUZEM SCORE (HUMANO)
+// CATEGORIA 13: INDICADORES HUMANOS (REDUZEM SCORE)
 // ==========================================
 const HUMAN_INDICATORS = [
-  // Testes automatizados
+  // Testes automatizados (FORTE indicador humano)
   {
     patterns: [
-      /\.(test|spec)\.(ts|tsx|js|jsx)/gi,
-      /describe\s*\(\s*["'`]/gi,
-      /it\s*\(\s*["'`](should|when|given)/gi,
-      /expect\s*\([^)]+\)\.(toBe|toEqual|toHaveLength|toContain|toThrow|toMatch)/gi,
-      /jest\.(fn|mock|spyOn)/gi,
-      /vitest/gi,
-      /@testing-library/gi,
+      /\.(test|spec)\.(ts|tsx|js|jsx)/g,
+      /describe\s*\(\s*["'`]/g,
+      /it\s*\(\s*["'`](should|when|given)/g,
+      /expect\s*\([^)]+\)\.(toBe|toEqual|toHaveLength|toContain|toThrow|toMatch)/g,
+      /jest\.(fn|mock|spyOn)/g,
+      /@testing-library/g,
+      /vitest|cypress|playwright/gi,
     ],
     indicator: "Testes Automatizados",
-    description: "Presença de testes indica desenvolvimento profissional e revisado.",
-    score: -25,
+    description: "Presença de testes indica desenvolvimento profissional revisado",
+    score: -30,
     minMatches: 4,
   },
   
   // TypeScript avançado
   {
     patterns: [
-      /type\s+[A-Z]\w+\s*<[^>]+>/gi,
-      /interface\s+[A-Z]\w+\s*<[^>]+>/gi,
-      /as\s+const/gi,
-      /satisfies\s+/gi,
-      /infer\s+/gi,
-      /keyof\s+typeof/gi,
+      /type\s+[A-Z]\w+\s*<[^>]+>/g,
+      /interface\s+[A-Z]\w+\s*<[^>]+>/g,
+      /as\s+const/g,
+      /satisfies\s+/g,
+      /infer\s+[A-Z]/g,
+      /keyof\s+typeof/g,
+      /Omit<|Pick<|Partial<|Required<|Record</g,
+      /extends\s+infer/g,
     ],
     indicator: "TypeScript Avançado",
-    description: "Uso de recursos avançados de TypeScript indica experiência.",
-    score: -15,
-    minMatches: 3,
+    description: "Uso de recursos avançados de TypeScript indica experiência",
+    score: -20,
+    minMatches: 4,
   },
   
-  // Hooks avançados React
+  // Hooks avançados e otimização React
   {
     patterns: [
-      /useMemo\s*\(\s*\(\s*\)/gi,
-      /useCallback\s*\(\s*\(/gi,
-      /useReducer\s*\(/gi,
-      /useImperativeHandle\s*\(/gi,
-      /useSyncExternalStore\s*\(/gi,
-      /useTransition\s*\(/gi,
-      /useDeferredValue\s*\(/gi,
-      /React\.memo\s*\(/gi,
-      /forwardRef\s*\(/gi,
+      /useMemo\s*\(/g,
+      /useCallback\s*\(/g,
+      /useReducer\s*\(/g,
+      /useImperativeHandle\s*\(/g,
+      /useSyncExternalStore\s*\(/g,
+      /useTransition\s*\(/g,
+      /useDeferredValue\s*\(/g,
+      /React\.memo\s*\(/g,
+      /forwardRef\s*[\(<]/g,
+      /useRef\s*<[A-Z]/g,
     ],
     indicator: "React Avançado",
-    description: "Hooks de performance e padrões avançados de React.",
-    score: -18,
-    minMatches: 3,
+    description: "Hooks de performance e padrões avançados de React",
+    score: -22,
+    minMatches: 4,
   },
   
-  // Tratamento de erros robusto
+  // Error Boundaries e tratamento robusto
   {
     patterns: [
-      /try\s*\{[\s\S]{20,}?\}\s*catch\s*\([^)]+\)\s*\{[\s\S]{10,}?\}/gi,
-      /\.catch\s*\(\s*\([^)]+\)\s*=>\s*\{/gi,
-      /ErrorBoundary/gi,
-      /onError\s*[=:]/gi,
-      /fallback\s*[=:]/gi,
+      /ErrorBoundary/g,
+      /componentDidCatch/g,
+      /getDerivedStateFromError/g,
+      /onError\s*[=:]\s*\{?\s*\(/g,
+      /fallback\s*[=:]/g,
+      /error\.cause/g,
+      /new\s+(Error|TypeError|RangeError)\s*\(/g,
     ],
     indicator: "Tratamento de Erros Robusto",
-    description: "Error handling detalhado indica código de produção.",
-    score: -12,
-    minMatches: 3,
-  },
-  
-  // Acessibilidade
-  {
-    patterns: [
-      /aria-label=["'][^"']{10,}["']/gi,
-      /aria-describedby/gi,
-      /aria-labelledby/gi,
-      /aria-live/gi,
-      /role=["'](button|dialog|alert|navigation|main|complementary|contentinfo|form|search)/gi,
-      /sr-only/gi,
-      /focus-visible/gi,
-      /tabIndex/gi,
-    ],
-    indicator: "Acessibilidade",
-    description: "Implementação cuidadosa de ARIA e acessibilidade.",
+    description: "Error handling detalhado indica código de produção",
     score: -15,
-    minMatches: 6,
+    minMatches: 3,
   },
   
-  // Documentação/Comentários úteis
+  // Acessibilidade detalhada
   {
     patterns: [
-      /\/\*\*[\s\S]{50,}?\*\//gi, // JSDoc extenso
-      /@param\s+\{/gi,
-      /@returns?\s+\{/gi,
-      /@example/gi,
-      /@deprecated/gi,
+      /aria-label=["'][^"']{15,}["']/g,
+      /aria-describedby/g,
+      /aria-labelledby/g,
+      /aria-live/g,
+      /aria-expanded/g,
+      /aria-haspopup/g,
+      /role=["'](dialog|alertdialog|menu|menubar|tree|grid|listbox)/g,
+      /focus-trap|focus-lock/gi,
+      /skip.?to.?(main|content)/gi,
     ],
-    indicator: "Documentação JSDoc",
-    description: "Documentação detalhada de código.",
-    score: -12,
-    minMatches: 3,
+    indicator: "Acessibilidade Avançada",
+    description: "Implementação cuidadosa de ARIA e acessibilidade",
+    score: -18,
+    minMatches: 5,
+  },
+  
+  // JSDoc e documentação detalhada
+  {
+    patterns: [
+      /@param\s+\{[^}]+\}\s+\w+\s+-\s+/g,
+      /@returns?\s+\{[^}]+\}\s+/g,
+      /@example[\s\S]+?\*\//g,
+      /@throws\s+\{/g,
+      /@deprecated\s+/g,
+      /@see\s+/g,
+      /@since\s+/g,
+      /@author\s+/g,
+    ],
+    indicator: "Documentação JSDoc Detalhada",
+    description: "Documentação detalhada e profissional",
+    score: -15,
+    minMatches: 4,
   },
   
   // Configuração de projeto madura
   {
     patterns: [
-      /eslint-disable-next-line/gi,
-      /prettier-ignore/gi,
-      /stylelint-disable/gi,
-      /@ts-expect-error/gi,
-      /\.eslintrc/gi,
-      /\.prettierrc/gi,
-      /husky/gi,
-      /lint-staged/gi,
+      /eslint-disable-next-line\s+\w+\/\w+/g,
+      /prettier-ignore/g,
+      /@ts-expect-error\s+/g,
+      /\.eslintrc|eslint\.config/g,
+      /\.prettierrc|prettier\.config/g,
+      /husky|lint-staged|commitlint/gi,
     ],
-    indicator: "Configuração de Linter",
-    description: "Configuração de ferramentas indica projeto maduro.",
-    score: -10,
-    minMatches: 2,
+    indicator: "Configuração de Linting Madura",
+    description: "Configuração de ferramentas indica projeto profissional",
+    score: -12,
+    minMatches: 3,
   },
   
   // CI/CD e DevOps
   {
     patterns: [
-      /\.github\/workflows/gi,
-      /gitlab-ci/gi,
-      /Dockerfile/gi,
-      /docker-compose/gi,
-      /kubernetes/gi,
-      /terraform/gi,
+      /\.github\/workflows/g,
+      /gitlab-ci\.yml/g,
+      /\.circleci/g,
+      /Dockerfile/g,
+      /docker-compose/g,
+      /kubernetes|k8s/gi,
+      /terraform|pulumi/gi,
     ],
-    indicator: "CI/CD e DevOps",
-    description: "Configuração de infraestrutura e deploy automatizado.",
-    score: -20,
-    minMatches: 1,
-  },
-  
-  // Git e versionamento
-  {
-    patterns: [
-      /CHANGELOG\.md/gi,
-      /CONTRIBUTING\.md/gi,
-      /\.gitignore/gi,
-      /semantic-release/gi,
-      /conventional-commits/gi,
-    ],
-    indicator: "Práticas de Versionamento",
-    description: "Documentação de contribuição e changelog.",
-    score: -12,
+    indicator: "CI/CD e Infraestrutura",
+    description: "Configuração de deploy automatizado",
+    score: -25,
     minMatches: 2,
   },
   
-  // Código legado/migrado
+  // Internacionalização real
   {
     patterns: [
-      /deprecated/gi,
-      /legacy/gi,
-      /migration/gi,
-      /backward.?compat/gi,
+      /next-intl|react-intl|i18next/g,
+      /useTranslations?\s*\(/g,
+      /formatMessage\s*\(/g,
+      /t\s*\(\s*["'][a-z]+(\.[a-z]+)+["']\s*\)/g,
+      /Intl\.(DateTimeFormat|NumberFormat|RelativeTimeFormat)/g,
     ],
-    indicator: "Código com Histórico",
-    description: "Menções a código legado indicam projeto com histórico.",
-    score: -8,
-    minMatches: 2,
+    indicator: "Internacionalização Real",
+    description: "Suporte a múltiplos idiomas implementado",
+    score: -18,
+    minMatches: 3,
   },
   
-  // Internacionalização
+  // Code splitting e otimização
   {
     patterns: [
-      /i18n/gi,
-      /next-intl/gi,
-      /react-intl/gi,
-      /useTranslation/gi,
-      /t\s*\(\s*["'][a-z]+\./gi,
+      /React\.lazy\s*\(/g,
+      /dynamic\s*\(\s*\(\s*\)\s*=>\s*import/g,
+      /next\/dynamic/g,
+      /Suspense\s*fallback/g,
+      /prefetch\s*[=:]/g,
+      /webpackChunkName/g,
     ],
-    indicator: "Internacionalização",
-    description: "Suporte a múltiplos idiomas indica projeto maduro.",
+    indicator: "Code Splitting Avançado",
+    description: "Lazy loading e otimização de bundle",
     score: -15,
     minMatches: 3,
   },
   
-  // Performance otimizada
-  {
-    patterns: [
-      /lazy\s*\(\s*\(\s*\)\s*=>\s*import/gi,
-      /Suspense/gi,
-      /dynamic\s*\(\s*\(\s*\)\s*=>/gi,
-      /prefetch/gi,
-      /preload/gi,
-    ],
-    indicator: "Otimização de Performance",
-    description: "Code splitting e lazy loading indicam otimização.",
-    score: -10,
-    minMatches: 2,
-  },
-  
-  // Monitoramento e analytics personalizados
+  // Monitoramento e observabilidade
   {
     patterns: [
       /sentry/gi,
       /datadog/gi,
       /newrelic/gi,
-      /logflare/gi,
-      /mixpanel/gi,
-      /amplitude/gi,
+      /logrocket/gi,
+      /bugsnag/gi,
+      /rollbar/gi,
+      /honeycomb/gi,
     ],
-    indicator: "Monitoramento",
-    description: "Integração com ferramentas de monitoramento.",
-    score: -12,
+    indicator: "Monitoramento de Produção",
+    description: "Integração com ferramentas de observabilidade",
+    score: -15,
     minMatches: 1,
+  },
+  
+  // State management complexo
+  {
+    patterns: [
+      /zustand/gi,
+      /jotai/gi,
+      /recoil/gi,
+      /xstate/gi,
+      /redux-toolkit|@reduxjs\/toolkit/gi,
+      /createSlice|createAsyncThunk/g,
+    ],
+    indicator: "State Management Avançado",
+    description: "Bibliotecas de estado mais complexas que useState/useContext",
+    score: -12,
+    minMatches: 2,
+  },
+  
+  // Comentários com contexto de negócio (não genéricos)
+  {
+    patterns: [
+      /\/\/\s*(BUG|FIX|HACK|WORKAROUND|LEGACY|TECH.?DEBT):/gi,
+      /\/\/\s*@see\s+(https?:|JIRA|TICKET|#\d+)/gi,
+      /\/\/\s*(per|as per|according to)\s+(client|design|spec|PM|product)/gi,
+    ],
+    indicator: "Comentários com Contexto de Negócio",
+    description: "Comentários referenciando bugs, tickets ou decisões de produto",
+    score: -12,
+    minMatches: 2,
+  },
+  
+  // Variáveis de ambiente customizadas
+  {
+    patterns: [
+      /process\.env\.[A-Z_]{10,}/g,
+      /NEXT_PUBLIC_(?!VERCEL)[A-Z_]{5,}/g,
+    ],
+    indicator: "Variáveis de Ambiente Customizadas",
+    description: "Variáveis de ambiente específicas do projeto",
+    score: -8,
+    minMatches: 3,
   },
 ]
 
@@ -428,9 +602,8 @@ const HUMAN_INDICATORS = [
 function countMatches(content: string, patterns: RegExp[]): number {
   let count = 0
   for (const pattern of patterns) {
-    // Reset lastIndex para regex global
-    pattern.lastIndex = 0
-    const matches = content.match(pattern)
+    const regex = new RegExp(pattern.source, pattern.flags)
+    const matches = content.match(regex)
     if (matches) {
       count += matches.length
     }
@@ -438,23 +611,56 @@ function countMatches(content: string, patterns: RegExp[]): number {
   return count
 }
 
-function getUniqueMatches(content: string, patterns: RegExp[]): Set<string> {
-  const uniqueMatches = new Set<string>()
-  for (const pattern of patterns) {
-    pattern.lastIndex = 0
-    const matches = content.match(pattern)
-    if (matches) {
-      matches.forEach(m => uniqueMatches.add(m.toLowerCase()))
+function analyzeVariableNameEntropy(content: string): { score: number; indicators: string[] } {
+  const indicators: string[] = []
+  let score = 0
+  
+  // Extrai nomes de variáveis
+  const varDeclarations = content.match(/(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g) || []
+  const varNames = varDeclarations.map(d => d.replace(/^(const|let|var)\s+/, '').toLowerCase())
+  
+  if (varNames.length < 10) return { score: 0, indicators: [] }
+  
+  // Conta quantas são nomes genéricos
+  let genericCount = 0
+  for (const name of varNames) {
+    if (LOW_ENTROPY_VARIABLE_NAMES.includes(name)) {
+      genericCount++
     }
   }
-  return uniqueMatches
+  
+  const genericRatio = genericCount / varNames.length
+  
+  if (genericRatio > 0.4) {
+    indicators.push(`${Math.round(genericRatio * 100)}% das variáveis têm nomes genéricos (data, item, result, etc.)`)
+    score += Math.round(genericRatio * 20)
+  }
+  
+  return { score, indicators }
+}
+
+function analyzeCommentEchoes(content: string): { score: number; count: number } {
+  let count = 0
+  for (const pattern of COMMENT_ECHO_PATTERNS) {
+    const regex = new RegExp(pattern.source, pattern.flags)
+    const matches = content.match(regex)
+    if (matches) {
+      count += matches.length
+    }
+  }
+  
+  // Só conta se houver muitos (5+)
+  if (count >= 5) {
+    return { score: Math.min(count * 2, 15), count }
+  }
+  return { score: 0, count }
 }
 
 function analyzeContent(content: string): { score: number; reasons: AnalysisReason[] } {
   const reasons: AnalysisReason[] = []
   let score = 0
   
-  // 1. Verifica assinaturas DIRETAS de IA (mais importantes)
+  // 1. ASSINATURAS DIRETAS (mais importante)
   for (const indicator of DIRECT_AI_SIGNATURES) {
     const matches = countMatches(content, indicator.patterns)
     if (matches > 0) {
@@ -467,7 +673,79 @@ function analyzeContent(content: string): { score: number; reasons: AnalysisReas
     }
   }
   
-  // 2. Verifica padrões de código de IA
+  // 2. BAIXA ENTROPIA EM NOMES DE VARIÁVEIS
+  const entropyAnalysis = analyzeVariableNameEntropy(content)
+  if (entropyAnalysis.score > 0) {
+    reasons.push({
+      indicator: "Baixa Entropia em Nomes",
+      description: entropyAnalysis.indicators.join("; "),
+      weight: "medium",
+    })
+    score += entropyAnalysis.score
+  }
+  
+  // 3. COMMENT ECHOES
+  const echoAnalysis = analyzeCommentEchoes(content)
+  if (echoAnalysis.score > 0) {
+    reasons.push({
+      indicator: "Comentários 'Echo'",
+      description: `${echoAnalysis.count} comentários que apenas descrevem o que o código faz, não o porquê`,
+      weight: "medium",
+    })
+    score += echoAnalysis.score
+  }
+  
+  // 4. FRASES TÍPICAS DE IA (verbal tics)
+  for (const tic of AI_VERBAL_TICS) {
+    const matches = countMatches(content, tic.patterns)
+    if (matches >= tic.minMatches) {
+      reasons.push({
+        indicator: tic.indicator,
+        description: `Frase típica de LLMs encontrada ${matches}x`,
+        weight: "medium",
+      })
+      score += 5
+    }
+  }
+  
+  // 5. OVER-COMMENTING
+  const commentAnalysis = detectOverCommenting(content)
+  if (commentAnalysis.detected) {
+    reasons.push({
+      indicator: "Over-Commenting",
+      description: `Ratio comentário/código de ${Math.round(commentAnalysis.ratio * 100)}% (IA comenta excessivamente)`,
+      weight: "medium",
+    })
+    score += 8
+  }
+  
+  // 6. CONSISTÊNCIA INUMANA
+  const consistencyAnalysis = detectInhumanConsistency(content)
+  if (consistencyAnalysis.score > 0) {
+    for (const ind of consistencyAnalysis.indicators) {
+      reasons.push({
+        indicator: "Consistência Artificial",
+        description: ind,
+        weight: "medium",
+      })
+    }
+    score += consistencyAnalysis.score
+  }
+  
+  // 7. HAPPY PATH BIAS
+  const happyPathAnalysis = detectHappyPathBias(content)
+  if (happyPathAnalysis.score > 0) {
+    for (const ind of happyPathAnalysis.indicators) {
+      reasons.push({
+        indicator: "Happy Path Bias",
+        description: ind,
+        weight: "low",
+      })
+    }
+    score += happyPathAnalysis.score
+  }
+  
+  // 8. PADRÕES DE CÓDIGO DE IA
   for (const indicator of AI_CODE_PATTERNS) {
     const matches = countMatches(content, indicator.patterns)
     const minRequired = indicator.minMatches || 1
@@ -481,49 +759,49 @@ function analyzeContent(content: string): { score: number; reasons: AnalysisReas
     }
   }
   
-  // 3. Verifica padrões de Tailwind genéricos
+  // 9. PADRÕES DE TAILWIND
   for (const indicator of AI_TAILWIND_PATTERNS) {
     const matches = countMatches(content, indicator.patterns)
     const minRequired = indicator.minMatches || 1
     if (matches >= minRequired) {
       reasons.push({
         indicator: indicator.indicator,
-        description: `${indicator.description} (${matches} ocorrências)`,
+        description: `${indicator.description} (${matches}x)`,
         weight: "low",
       })
       score += indicator.score
     }
   }
   
-  // 4. Verifica padrões de copy/texto genérico
+  // 10. TEXTOS GENÉRICOS
   for (const indicator of AI_COPY_PATTERNS) {
     const matches = countMatches(content, indicator.patterns)
     const minRequired = indicator.minMatches || 1
     if (matches >= minRequired) {
       reasons.push({
         indicator: indicator.indicator,
-        description: `${indicator.description}`,
+        description: indicator.description,
         weight: "medium",
       })
       score += indicator.score
     }
   }
   
-  // 5. Verifica padrões de comentários de IA
+  // 11. COMENTÁRIOS DE SEÇÃO
   for (const indicator of AI_COMMENT_PATTERNS) {
     const matches = countMatches(content, indicator.patterns)
     const minRequired = indicator.minMatches || 1
     if (matches >= minRequired) {
       reasons.push({
         indicator: indicator.indicator,
-        description: `${indicator.description} (${matches} encontrados)`,
-        weight: "medium",
+        description: `${indicator.description} (${matches}x)`,
+        weight: "low",
       })
       score += indicator.score
     }
   }
   
-  // 6. Verifica indicadores HUMANOS (reduzem score)
+  // 12. INDICADORES HUMANOS (REDUZEM SCORE)
   for (const indicator of HUMAN_INDICATORS) {
     const matches = countMatches(content, indicator.patterns)
     const minRequired = indicator.minMatches || 1
@@ -587,54 +865,53 @@ export async function analyzeWebsite(url: string): Promise<AnalysisResultData> {
     totalScore += contentAnalysis.score
     reasons.push(...contentAnalysis.reasons)
     
-    // Adiciona informação sobre análise completa
-    if (content.length > 10000) {
+    // Info sobre análise
+    if (content.length > 5000) {
       reasons.push({
         indicator: "Análise Completa",
-        description: `Analisados ${Math.round(content.length / 1000)}KB de código fonte.`,
+        description: `Analisados ${Math.round(content.length / 1000)}KB de código fonte`,
         weight: "low",
       })
     }
   } else {
     reasons.push({
       indicator: "Análise Limitada",
-      description: "Não foi possível acessar o código fonte. Análise baseada apenas na URL e metadados.",
+      description: "Não foi possível acessar o código fonte. Análise baseada apenas na URL",
       weight: "low",
     })
     // Se não conseguiu analisar conteúdo, reduz confiança
-    totalScore = Math.min(totalScore, 30)
+    totalScore = Math.min(totalScore, 25)
   }
   
   // Calcula porcentagem final
-  // Score base: 10% (muito conservador)
-  // Só aumenta significativamente com evidências fortes
-  let percentage = 10 + Math.max(0, totalScore)
+  // Score base: 8% (benefício da dúvida)
+  let percentage = 8 + Math.max(0, totalScore)
   
-  // Se não tem NENHUMA evidência forte, limita a 35%
+  // Se não tem NENHUMA evidência forte, limita a 32%
   const hasStrongEvidence = reasons.some(r => r.weight === "high")
-  if (!hasStrongEvidence && percentage > 35) {
-    percentage = 35
+  if (!hasStrongEvidence && percentage > 32) {
+    percentage = 32
   }
   
   // Limites finais
   percentage = Math.min(95, Math.max(5, percentage))
   percentage = Math.round(percentage)
   
-  // Determina o veredicto com critérios mais rigorosos
+  // Determina o veredicto
   let verdict: AnalysisResultData["verdict"]
-  if (percentage <= 20) {
+  if (percentage <= 18) {
     verdict = "human"
-  } else if (percentage <= 35) {
+  } else if (percentage <= 32) {
     verdict = "likely_human"
-  } else if (percentage <= 55) {
+  } else if (percentage <= 50) {
     verdict = "mixed"
-  } else if (percentage <= 75) {
+  } else if (percentage <= 72) {
     verdict = "likely_ai"
   } else {
     verdict = "ai"
   }
   
-  // Ordena os motivos por peso
+  // Ordena: high primeiro, depois medium, depois low
   const weightOrder = { high: 0, medium: 1, low: 2 }
   reasons.sort((a, b) => weightOrder[a.weight] - weightOrder[b.weight])
   
