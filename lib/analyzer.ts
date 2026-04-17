@@ -1,272 +1,344 @@
 import type { AnalysisResultData, AnalysisReason } from "@/components/analysis-result"
 
-// Padrões comuns de código gerado por IA
-const AI_INDICATORS = {
-  // Estrutura e organização
-  genericStructure: {
+// Indicadores FORTES de código gerado por IA (muito específicos)
+const STRONG_AI_INDICATORS = [
+  {
     patterns: [
-      /flex\s+items-center\s+justify-center/gi,
-      /min-h-screen/gi,
-      /max-w-\d+xl/gi,
+      /created\s*(with|by)\s*v0/gi,
+      /built\s*(with|by)\s*v0/gi,
+      /v0\.dev/gi,
+      /vercel\s*v0/gi,
     ],
-    indicator: "Estrutura de Layout Genérica",
-    description: "Usa padrões de layout muito comuns em templates de IA (flex centralizado, containers padrão).",
-    weight: "low" as const,
+    indicator: "Assinatura v0.dev",
+    description: "Referência direta à ferramenta v0 da Vercel nos metadados ou código.",
+    score: 40,
   },
-  
-  // Comentários explicativos demais
-  excessiveComments: {
+  {
     patterns: [
-      /<!--\s*(Hero|Header|Footer|Section|Component)/gi,
-      /\/\/\s*(TODO|FIXME|NOTE):/gi,
+      /generated\s*(by|with|using)\s*(ai|artificial\s*intelligence|gpt|claude|chatgpt|copilot)/gi,
+      /ai[\-\s]generated/gi,
+      /powered\s*by\s*(gpt|claude|openai|anthropic)/gi,
     ],
-    indicator: "Comentários Explicativos Genéricos",
-    description: "Comentários muito didáticos, típicos de código gerado para explicar cada seção.",
-    weight: "medium" as const,
+    indicator: "Assinatura de IA",
+    description: "Menção explícita de que o código foi gerado por IA.",
+    score: 45,
   },
-  
-  // Classes Tailwind típicas de IA
-  tailwindPatterns: {
+  {
     patterns: [
-      /bg-gradient-to-[rb]/gi,
-      /from-\w+-\d+\s+to-\w+-\d+/gi,
-      /hover:scale-105/gi,
-      /transition-all\s+duration-300/gi,
-      /rounded-\d*xl/gi,
-      /shadow-\d*xl/gi,
+      /cursor\.sh/gi,
+      /cursor\s*ai/gi,
+      /bolt\.new/gi,
+      /replit\s*ai/gi,
+      /codeium/gi,
     ],
-    indicator: "Padrões Tailwind de IA",
-    description: "Combinações de classes Tailwind muito comuns em código gerado (gradientes, transições suaves).",
-    weight: "medium" as const,
+    indicator: "Ferramenta de IA Conhecida",
+    description: "Referência a ferramentas de desenvolvimento assistido por IA.",
+    score: 35,
   },
-  
-  // Componentes shadcn/ui
-  shadcnComponents: {
+]
+
+// Indicadores MÉDIOS - padrões comuns mas não exclusivos de IA
+const MEDIUM_AI_INDICATORS = [
+  {
     patterns: [
-      /@\/components\/ui\//gi,
-      /from\s+['"]@radix-ui/gi,
+      /@\/components\/ui\/(button|card|input|dialog|dropdown|sheet|tabs|accordion|alert|avatar|badge|calendar|checkbox|collapsible|command|context-menu|hover-card|menubar|navigation-menu|popover|progress|radio-group|scroll-area|select|separator|skeleton|slider|switch|table|textarea|toast|toggle|tooltip)/gi,
+    ],
+    indicator: "Uso Extensivo de shadcn/ui",
+    description: "Múltiplos componentes shadcn/ui, biblioteca padrão de ferramentas como v0.",
+    score: 12,
+    minMatches: 5, // Precisa ter 5+ componentes diferentes
+  },
+  {
+    patterns: [
+      /cn\s*\(\s*["'`][^"'`]*["'`]\s*,/gi,
+    ],
+    indicator: "Utilitário cn() do shadcn",
+    description: "Função cn() para merge de classes, padrão do shadcn/ui.",
+    score: 8,
+    minMatches: 3,
+  },
+  {
+    patterns: [
       /lucide-react/gi,
     ],
-    indicator: "Uso de shadcn/ui + Radix",
-    description: "Stack padrão de componentes usada por ferramentas de IA como v0.dev.",
-    weight: "high" as const,
+    indicator: "Lucide React Icons",
+    description: "Biblioteca de ícones padrão de templates de IA.",
+    score: 5,
   },
-  
-  // Next.js App Router
-  nextjsAppRouter: {
-    patterns: [
-      /use\s+client/gi,
-      /use\s+server/gi,
-      /app\/.*\/page\.tsx/gi,
-      /export\s+default\s+function\s+\w+Page/gi,
-    ],
-    indicator: "Next.js App Router",
-    description: "Estrutura moderna do Next.js, frequentemente gerada por ferramentas de IA.",
-    weight: "low" as const,
-  },
-  
-  // Estrutura de formulários
-  formPatterns: {
-    patterns: [
-      /onSubmit=\{.*handleSubmit/gi,
-      /e\.preventDefault\(\)/gi,
-      /useState\(['"]'['"]\)/gi,
-    ],
-    indicator: "Padrões de Formulário Genéricos",
-    description: "Implementação de formulários com padrões muito comuns de tutoriais e IA.",
-    weight: "low" as const,
-  },
-  
-  // Animações CSS típicas
-  animationPatterns: {
-    patterns: [
-      /animate-pulse/gi,
-      /animate-bounce/gi,
-      /animate-spin/gi,
-      /motion\.div/gi,
-      /framer-motion/gi,
-    ],
-    indicator: "Animações Padrão",
-    description: "Animações básicas do Tailwind ou Framer Motion, muito usadas em código de IA.",
-    weight: "low" as const,
-  },
-  
-  // Texto placeholder típico
-  placeholderText: {
-    patterns: [
-      /Lorem\s+ipsum/gi,
-      /example\.com/gi,
-      /john@email\.com/gi,
-      /your-.*-here/gi,
-    ],
-    indicator: "Texto Placeholder",
-    description: "Textos genéricos de exemplo que não foram personalizados.",
-    weight: "medium" as const,
-  },
-  
-  // Meta tags genéricas
-  genericMeta: {
-    patterns: [
-      /Created\s+with\s+v0/gi,
-      /Built\s+with\s+AI/gi,
-      /Generated\s+by/gi,
-      /Powered\s+by\s+Claude/gi,
-      /Powered\s+by\s+GPT/gi,
-    ],
-    indicator: "Meta Tags de IA",
-    description: "Referências diretas a ferramentas de IA nos metadados ou código.",
-    weight: "high" as const,
-  },
-  
-  // Estrutura de API genérica
-  apiPatterns: {
-    patterns: [
-      /\/api\/.*route\.ts/gi,
-      /NextResponse\.json/gi,
-      /export\s+async\s+function\s+(GET|POST|PUT|DELETE)/gi,
-    ],
-    indicator: "API Routes Padrão",
-    description: "Estrutura de API do Next.js com padrões muito comuns.",
-    weight: "low" as const,
-  },
-}
+]
 
-// Indicadores positivos de código humano
-const HUMAN_INDICATORS = {
-  customStyling: {
+// Indicadores FRACOS - muito comuns em qualquer projeto moderno
+const WEAK_AI_INDICATORS = [
+  {
     patterns: [
-      /custom-\w+/gi,
-      /\[&_[\w-]+\]/gi, // Seletores CSS complexos no Tailwind
+      /bg-gradient-to-(r|l|t|b|br|bl|tr|tl)/gi,
     ],
-    indicator: "Estilização Personalizada",
-    description: "CSS customizado que indica trabalho manual e atenção aos detalhes.",
-    weight: "medium" as const,
+    indicator: "Gradientes Tailwind",
+    description: "Gradientes CSS via Tailwind - comum mas não exclusivo de IA.",
+    score: 2,
+    minMatches: 3,
   },
-  
-  complexLogic: {
+  {
     patterns: [
-      /useMemo\(/gi,
-      /useCallback\(/gi,
-      /useReducer\(/gi,
+      /hover:scale-\d+/gi,
+      /transition-all\s+duration-\d+/gi,
     ],
-    indicator: "Lógica React Avançada",
-    description: "Uso de hooks avançados que indicam otimizações pensadas.",
-    weight: "medium" as const,
+    indicator: "Animações de Hover",
+    description: "Transições CSS genéricas - usadas por humanos e IA.",
+    score: 1,
+    minMatches: 5,
   },
-  
-  testFiles: {
+]
+
+// Indicadores que REDUZEM a chance de ser IA
+const HUMAN_INDICATORS = [
+  {
     patterns: [
       /\.test\.(ts|tsx|js|jsx)/gi,
       /\.spec\.(ts|tsx|js|jsx)/gi,
-      /jest|vitest|cypress/gi,
+      /describe\s*\(\s*["'`]/gi,
+      /it\s*\(\s*["'`]/gi,
+      /expect\s*\(/gi,
     ],
     indicator: "Testes Automatizados",
-    description: "Presença de testes indica desenvolvimento profissional.",
-    weight: "high" as const,
+    description: "Presença de testes indica desenvolvimento profissional e revisado.",
+    score: -25,
+    minMatches: 3,
   },
+  {
+    patterns: [
+      /eslint-disable/gi,
+      /prettier-ignore/gi,
+      /stylelint-disable/gi,
+    ],
+    indicator: "Configurações de Linter",
+    description: "Exceções de linter indicam código revisado e mantido.",
+    score: -10,
+  },
+  {
+    patterns: [
+      /copyright/gi,
+      /license:/gi,
+      /author:/gi,
+      /@author/gi,
+    ],
+    indicator: "Metadados de Autoria",
+    description: "Informações de copyright e autoria indicam projeto estabelecido.",
+    score: -15,
+  },
+  {
+    patterns: [
+      /\bgit\s+commit/gi,
+      /changelog/gi,
+      /CONTRIBUTING\.md/gi,
+      /pull\s*request/gi,
+    ],
+    indicator: "Histórico de Desenvolvimento",
+    description: "Referências a processo de desenvolvimento colaborativo.",
+    score: -20,
+  },
+  {
+    patterns: [
+      /useMemo\s*\(/gi,
+      /useCallback\s*\(/gi,
+      /useReducer\s*\(/gi,
+      /React\.memo/gi,
+      /forwardRef/gi,
+    ],
+    indicator: "Otimizações React",
+    description: "Hooks avançados de performance indicam desenvolvimento experiente.",
+    score: -12,
+    minMatches: 2,
+  },
+  {
+    patterns: [
+      /error\s*boundary/gi,
+      /try\s*{\s*[\s\S]*?\s*}\s*catch/gi,
+      /\.catch\s*\(/gi,
+    ],
+    indicator: "Tratamento de Erros",
+    description: "Tratamento robusto de erros indica código de produção.",
+    score: -8,
+    minMatches: 3,
+  },
+  {
+    patterns: [
+      /accessibility/gi,
+      /aria-label/gi,
+      /aria-describedby/gi,
+      /role=["']/gi,
+      /sr-only/gi,
+    ],
+    indicator: "Acessibilidade",
+    description: "Atributos de acessibilidade indicam atenção a boas práticas.",
+    score: -10,
+    minMatches: 5,
+  },
+]
+
+// Padrões de URL que indicam ferramentas de IA
+const AI_URL_PATTERNS = [
+  { pattern: /\.v0\.dev$/i, indicator: "Domínio v0.dev", score: 50 },
+  { pattern: /v0-.*\.vercel\.app$/i, indicator: "Deploy v0 na Vercel", score: 35 },
+  { pattern: /bolt-.*\.netlify\.app$/i, indicator: "Deploy Bolt.new", score: 35 },
+]
+
+// Padrões de URL neutros (não aumentam score)
+const NEUTRAL_URL_PATTERNS = [
+  /\.vercel\.app$/i,
+  /\.netlify\.app$/i,
+  /\.pages\.dev$/i,
+]
+
+async function fetchSiteContent(url: string): Promise<string | null> {
+  try {
+    // Usa um proxy CORS ou API para buscar o conteúdo
+    const response = await fetch(`/api/fetch-site?url=${encodeURIComponent(url)}`)
+    if (!response.ok) return null
+    const data = await response.json()
+    return data.content
+  } catch {
+    return null
+  }
+}
+
+function countMatches(content: string, patterns: RegExp[]): number {
+  let count = 0
+  for (const pattern of patterns) {
+    const matches = content.match(pattern)
+    if (matches) {
+      count += matches.length
+    }
+  }
+  return count
+}
+
+function analyzeContent(content: string): { score: number; reasons: AnalysisReason[] } {
+  const reasons: AnalysisReason[] = []
+  let score = 0
+  
+  // Verifica indicadores FORTES de IA
+  for (const indicator of STRONG_AI_INDICATORS) {
+    const matches = countMatches(content, indicator.patterns)
+    if (matches > 0) {
+      reasons.push({
+        indicator: indicator.indicator,
+        description: indicator.description,
+        weight: "high",
+      })
+      score += indicator.score
+    }
+  }
+  
+  // Verifica indicadores MÉDIOS de IA
+  for (const indicator of MEDIUM_AI_INDICATORS) {
+    const matches = countMatches(content, indicator.patterns)
+    const minRequired = indicator.minMatches || 1
+    if (matches >= minRequired) {
+      reasons.push({
+        indicator: indicator.indicator,
+        description: `${indicator.description} (${matches} ocorrências encontradas)`,
+        weight: "medium",
+      })
+      score += indicator.score
+    }
+  }
+  
+  // Verifica indicadores FRACOS de IA
+  for (const indicator of WEAK_AI_INDICATORS) {
+    const matches = countMatches(content, indicator.patterns)
+    const minRequired = indicator.minMatches || 1
+    if (matches >= minRequired) {
+      reasons.push({
+        indicator: indicator.indicator,
+        description: `${indicator.description} (${matches} ocorrências)`,
+        weight: "low",
+      })
+      score += indicator.score
+    }
+  }
+  
+  // Verifica indicadores HUMANOS (reduzem score)
+  for (const indicator of HUMAN_INDICATORS) {
+    const matches = countMatches(content, indicator.patterns)
+    const minRequired = indicator.minMatches || 1
+    if (matches >= minRequired) {
+      reasons.push({
+        indicator: indicator.indicator,
+        description: indicator.description,
+        weight: "low",
+      })
+      score += indicator.score // Score é negativo
+    }
+  }
+  
+  return { score, reasons }
+}
+
+function analyzeUrl(url: string): { score: number; reasons: AnalysisReason[] } {
+  const reasons: AnalysisReason[] = []
+  let score = 0
+  
+  for (const { pattern, indicator, score: patternScore } of AI_URL_PATTERNS) {
+    if (pattern.test(url)) {
+      reasons.push({
+        indicator,
+        description: `URL indica uso de ferramenta de IA: ${url}`,
+        weight: "high",
+      })
+      score += patternScore
+      break // Só conta uma vez
+    }
+  }
+  
+  return { score, reasons }
 }
 
 export async function analyzeWebsite(url: string): Promise<AnalysisResultData> {
+  const reasons: AnalysisReason[] = []
+  let totalScore = 0
+  
   // Simula delay de análise
-  await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000))
+  await new Promise(resolve => setTimeout(resolve, 800))
   
-  // Em uma implementação real, faríamos fetch do HTML/código fonte
-  // Por agora, vamos simular uma análise baseada na URL
-  const detectedReasons: AnalysisReason[] = []
-  let aiScore = 0
-  let humanScore = 0
+  // Análise da URL
+  const urlAnalysis = analyzeUrl(url)
+  totalScore += urlAnalysis.score
+  reasons.push(...urlAnalysis.reasons)
   
-  // Análise baseada em padrões da URL
-  const urlLower = url.toLowerCase()
+  // Tenta buscar conteúdo do site
+  await new Promise(resolve => setTimeout(resolve, 700))
+  const content = await fetchSiteContent(url)
   
-  // Verifica domínios conhecidos de deploy de projetos AI
-  if (urlLower.includes("vercel.app") || urlLower.includes("v0.dev")) {
-    detectedReasons.push({
-      indicator: "Hospedado na Vercel",
-      description: "Deploy na plataforma Vercel, comum para projetos criados com v0 e outras ferramentas de IA.",
-      weight: "medium",
-    })
-    aiScore += 15
-  }
-  
-  if (urlLower.includes("netlify.app")) {
-    detectedReasons.push({
-      indicator: "Deploy no Netlify",
-      description: "Plataforma de deploy comum, mas também usada por muitos desenvolvedores.",
+  if (content) {
+    const contentAnalysis = analyzeContent(content)
+    totalScore += contentAnalysis.score
+    reasons.push(...contentAnalysis.reasons)
+  } else {
+    // Se não conseguiu buscar, faz análise mais conservadora baseada só na URL
+    reasons.push({
+      indicator: "Análise Limitada",
+      description: "Não foi possível acessar o código fonte. Análise baseada apenas na URL.",
       weight: "low",
     })
-    aiScore += 5
   }
   
-  // Simula detecção de padrões no "código fonte"
-  // Em uma versão real, buscaríamos o HTML/JS real
-  
-  // Adiciona alguns indicadores aleatórios para demonstração
-  const possibleAiIndicators = Object.values(AI_INDICATORS)
-  const selectedIndicators = possibleAiIndicators
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 3 + Math.floor(Math.random() * 3))
-  
-  for (const indicator of selectedIndicators) {
-    detectedReasons.push({
-      indicator: indicator.indicator,
-      description: indicator.description,
-      weight: indicator.weight,
-    })
-    
-    switch (indicator.weight) {
-      case "high":
-        aiScore += 25
-        break
-      case "medium":
-        aiScore += 15
-        break
-      case "low":
-        aiScore += 8
-        break
-    }
-  }
-  
-  // Chance de detectar indicadores humanos
-  if (Math.random() > 0.6) {
-    const humanIndicatorsList = Object.values(HUMAN_INDICATORS)
-    const humanIndicator = humanIndicatorsList[Math.floor(Math.random() * humanIndicatorsList.length)]
-    detectedReasons.push({
-      indicator: humanIndicator.indicator,
-      description: humanIndicator.description,
-      weight: humanIndicator.weight,
-    })
-    
-    switch (humanIndicator.weight) {
-      case "high":
-        humanScore += 30
-        break
-      case "medium":
-        humanScore += 20
-        break
-      case "low":
-        humanScore += 10
-        break
-    }
-  }
-  
-  // Calcula porcentagem final
-  const totalScore = aiScore - humanScore
-  let percentage = Math.min(95, Math.max(5, 50 + totalScore))
-  
-  // Adiciona um pouco de variação
-  percentage = Math.round(percentage + (Math.random() * 10 - 5))
+  // Calcula porcentagem (0-100)
+  // Score base começa em 15% (benefício da dúvida)
+  // Score máximo teórico é ~100, mínimo teórico é ~-100
+  let percentage = 15 + Math.max(0, totalScore)
   percentage = Math.min(95, Math.max(5, percentage))
+  percentage = Math.round(percentage)
   
   // Determina o veredicto
   let verdict: AnalysisResultData["verdict"]
-  if (percentage <= 20) {
+  if (percentage <= 15) {
     verdict = "human"
-  } else if (percentage <= 40) {
+  } else if (percentage <= 30) {
     verdict = "likely_human"
-  } else if (percentage <= 60) {
+  } else if (percentage <= 50) {
     verdict = "mixed"
-  } else if (percentage <= 80) {
+  } else if (percentage <= 70) {
     verdict = "likely_ai"
   } else {
     verdict = "ai"
@@ -274,12 +346,12 @@ export async function analyzeWebsite(url: string): Promise<AnalysisResultData> {
   
   // Ordena os motivos por peso
   const weightOrder = { high: 0, medium: 1, low: 2 }
-  detectedReasons.sort((a, b) => weightOrder[a.weight] - weightOrder[b.weight])
+  reasons.sort((a, b) => weightOrder[a.weight] - weightOrder[b.weight])
   
   return {
     url,
     percentage,
     verdict,
-    reasons: detectedReasons,
+    reasons,
   }
 }
